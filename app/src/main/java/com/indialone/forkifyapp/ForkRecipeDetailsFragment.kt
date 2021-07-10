@@ -51,7 +51,7 @@ class ForkRecipeDetailsFragment : Fragment() {
                 mBinding.tvSocialRank.text = recipe.social_rank
                 var ingredients = ""
                 recipe.ingredients!!.forEach { ingredient ->
-                    ingredients = ingredients + ingredient + "\n"
+                    ingredients = "$ingredients-> $ingredient\n"
                 }
                 mBinding.tvIngredients.text = ingredients
 
