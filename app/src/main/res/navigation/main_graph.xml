@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_graph"
+    app:startDestination="@id/forkListFragment">
+
+    <fragment
+        android:id="@+id/forkListFragment"
+        android:name="com.indialone.forkifyapp.ForkListFragment"
+        android:label="@string/title_list"
+        tools:layout="@layout/fragment_fork_list">
+        <argument android:name="recipeId"
+            android:defaultValue="None"/>
+        <action
+            android:id="@+id/action_forkListFragment_to_forkRecipeDetailsFragment"
+            app:destination="@id/forkRecipeDetailsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+    <fragment
+        android:id="@+id/forkRecipeDetailsFragment"
+        android:name="com.indialone.forkifyapp.ForkRecipeDetailsFragment"
+        android:label="@string/title_details"
+        tools:layout="@layout/fragment_fork_recipe_details" />
+</navigation>

@@ -1,0 +1,2 @@
+rootProject.name = "ForkifyApp"
+include ':app'
