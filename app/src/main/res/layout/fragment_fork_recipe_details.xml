@@ -20,6 +20,7 @@
             android:fontFamily="sans-serif-medium"
             android:padding="2dp"
             android:text="Title"
+            android:transitionName="recipe_title"
             android:textColor="@color/white"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -31,6 +32,7 @@
             android:fontFamily="sans-serif-medium"
             android:padding="2dp"
             android:text="Publisher"
+            android:transitionName="recipe_publisher"
             android:textColor="@color/white"
             android:textSize="20sp"
             android:textStyle="italic" />
@@ -42,6 +44,7 @@
             android:fontFamily="sans-serif-medium"
             android:padding="2dp"
             android:text="Social Rank"
+            android:transitionName="recipe_rank"
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textStyle="normal" />
@@ -57,6 +60,7 @@
 
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/iv_dish"
+                android:transitionName="recipe_image"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop" />
