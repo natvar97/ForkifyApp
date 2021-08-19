@@ -9,15 +9,21 @@ import android.view.*
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.paging.LoadState
+import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.indialone.forkifyapp.adapters.CustomListItemAdapter
 import com.indialone.forkifyapp.adapters.RecipeItemAdapter
 import com.indialone.forkifyapp.databinding.DialogCustomListBinding
 import com.indialone.forkifyapp.databinding.FragmentForkListBinding
+import com.indialone.forkifyapp.model.details.Recipe
 import com.indialone.forkifyapp.model.search.RecipesItem
 import com.indialone.forkifyapp.utils.Constants
-import com.indialone.forkifyapp.viewmodel.RecipeViewModel
-import com.indialone.forkifyapp.viewmodel.ViewModelFactory
+import com.indialone.forkifyapp.viewmodel.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 
 class ForkListFragment : Fragment() {
 
@@ -46,7 +52,9 @@ class ForkListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         recipeViewModel =
-            ViewModelProvider(this, ViewModelFactory()).get(RecipeViewModel::class.java)
+            ViewModelProvider(this, Injection.provideViewModelFactory(requireContext(), this)).get(
+                RecipeViewModel::class.java
+            )
 
         if (selectedQuery == "") {
             mBinding.tv.visibility = View.VISIBLE
@@ -59,7 +67,8 @@ class ForkListFragment : Fragment() {
                 0
             )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                mBinding.tvIcon.compoundDrawableTintList = ColorStateList.valueOf(resources.getColor(R.color.white))
+                mBinding.tvIcon.compoundDrawableTintList =
+                    ColorStateList.valueOf(resources.getColor(R.color.white))
             }
             mBinding.rvRecipes.visibility = View.GONE
         } else {
@@ -73,11 +82,78 @@ class ForkListFragment : Fragment() {
                 Log.e("response", "${response.recipes}")
                 mBinding.rvRecipes.layoutManager = LinearLayoutManager(mBinding.root.context)
                 mBinding.rvRecipes.adapter =
-                    RecipeItemAdapter(response.recipes as ArrayList<RecipesItem>)
+                    RecipeItemAdapter()
             }
         }
 
     }
+
+    private fun FragmentForkListBinding.bindSearch(
+        uiState: StateFlow<UiState>,
+        onQueryChanged: (UiAction.Search) -> Unit
+    ) {
+
+
+        lifecycleScope.launch {
+            uiState
+                .map { it.query }
+                .distinctUntilChanged()
+                .collect()
+        }
+    }
+
+    private fun FragmentForkListBinding.bindState(
+        uiState: StateFlow<UiState>,
+        uiActions: (UiAction) -> Unit
+    ) {
+
+    }
+
+    private fun FragmentForkListBinding.bindList(
+        repoAdapter: RecipeItemAdapter,
+        uiState: StateFlow<UiState>,
+        onScrollChanged: (UiAction.Scroll) -> Unit
+    ) {
+        rvRecipes.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy != 0) onScrollChanged(UiAction.Scroll(currentQuery = uiState.value.query))
+            }
+        })
+        val notLoading = repoAdapter.loadStateFlow
+            // Only emit when REFRESH LoadState for RemoteMediator changes.
+            .distinctUntilChangedBy { it.refresh }
+            // Only react to cases where Remote REFRESH completes i.e., NotLoading.
+            .map { it.refresh is LoadState.NotLoading }
+
+        val hasNotScrolledForCurrentSearch = uiState
+            .map { it.hasNotScrolledForCurrentSearch }
+            .distinctUntilChanged()
+
+        val shouldScrollToTop = combine(
+            notLoading,
+            hasNotScrolledForCurrentSearch,
+            Boolean::and
+        )
+            .distinctUntilChanged()
+
+        val pagingData = uiState
+            .map { it.pagingData }
+            .distinctUntilChanged()
+
+        lifecycleScope.launch {
+            combine(shouldScrollToTop, pagingData, ::Pair)
+                // Each unique PagingData should be submitted once, take the latest from
+                // shouldScrollToTop
+                .distinctUntilChangedBy { it.second }
+                .collectLatest { (shouldScroll, pagingData) ->
+                    repoAdapter.submitData(pagingData as PagingData<UiModel>)
+                    // Scroll only after the data has been submitted to the adapter,
+                    // and is a fresh search
+                    if (shouldScroll) rvRecipes.scrollToPosition(0)
+                }
+        }
+    }
+
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.main_menu, menu)
@@ -125,7 +201,7 @@ class ForkListFragment : Fragment() {
             Log.e("response", "${response.recipes}")
             mBinding.rvRecipes.layoutManager = LinearLayoutManager(mBinding.root.context)
             mBinding.rvRecipes.adapter =
-                RecipeItemAdapter(response.recipes as ArrayList<RecipesItem>)
+                RecipeItemAdapter()
         }
         selectedQuery = filterItemSelection
     }

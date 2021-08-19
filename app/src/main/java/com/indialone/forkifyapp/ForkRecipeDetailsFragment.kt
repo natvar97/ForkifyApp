@@ -51,8 +51,9 @@ class ForkRecipeDetailsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         recipeViewModel =
-            ViewModelProvider(this, ViewModelFactory()).get(RecipeViewModel::class.java)
-
+            ViewModelProvider(this, Injection.provideViewModelFactory(requireContext(), this)).get(
+                RecipeViewModel::class.java
+            )
 
         recipeId?.let {
             recipeViewModel.fetchRecipeDetails(recipeId!!)
