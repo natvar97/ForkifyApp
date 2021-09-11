@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/forkListFragment"
-        android:name="com.indialone.forkifyapp.ForkListFragment"
+        android:name="com.indialone.forkifyapp.fragments.ForkListFragment"
         android:label="@string/title_list"
         tools:layout="@layout/fragment_fork_list">
         <argument
@@ -19,7 +19,7 @@
     </fragment>
     <fragment
         android:id="@+id/forkRecipeDetailsFragment"
-        android:name="com.indialone.forkifyapp.ForkRecipeDetailsFragment"
+        android:name="com.indialone.forkifyapp.fragments.ForkRecipeDetailsFragment"
         android:label="@string/title_details"
         tools:layout="@layout/fragment_fork_recipe_details" />
 </navigation>

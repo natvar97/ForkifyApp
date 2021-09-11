@@ -1,25 +1,28 @@
-package com.indialone.forkifyapp
+package com.indialone.forkifyapp.fragments
 
 import android.os.Build
 import android.os.Bundle
 import android.transition.TransitionInflater
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.RequiresApi
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.transition.Slide
 import com.bumptech.glide.Glide
 import com.indialone.forkifyapp.databinding.FragmentForkRecipeDetailsBinding
 import com.indialone.forkifyapp.viewmodel.RecipeViewModel
-import com.indialone.forkifyapp.viewmodel.ViewModelFactory
-import java.nio.file.Files.move
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ForkRecipeDetailsFragment : Fragment() {
 
     private lateinit var mBinding: FragmentForkRecipeDetailsBinding
-    private lateinit var recipeViewModel: RecipeViewModel
+
+    @Inject
+    lateinit var recipeViewModel: RecipeViewModel
+
     private var recipeId: String? = null
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)
@@ -31,8 +34,8 @@ class ForkRecipeDetailsFragment : Fragment() {
         }
 
         val animation = TransitionInflater.from(requireContext()).inflateTransition(
-                android.R.transition.slide_bottom
-            )
+            android.R.transition.slide_bottom
+        )
 
         sharedElementEnterTransition = animation
         sharedElementReturnTransition = animation
@@ -50,13 +53,8 @@ class ForkRecipeDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        recipeViewModel =
-            ViewModelProvider(this, Injection.provideViewModelFactory(requireContext(), this)).get(
-                RecipeViewModel::class.java
-            )
-
         recipeId?.let {
-            recipeViewModel.fetchRecipeDetails(recipeId!!)
+            recipeViewModel.fetchRecipeDetails(it)
             recipeViewModel.getRecipeDetials().observe(viewLifecycleOwner) { response ->
                 val recipe = response.recipe
 

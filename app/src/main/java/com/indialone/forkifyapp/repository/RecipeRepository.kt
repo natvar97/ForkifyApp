@@ -1,38 +1,16 @@
 package com.indialone.forkifyapp.repository
 
 import androidx.annotation.WorkerThread
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingData
 import com.indialone.forkifyapp.api.ApiService
-import com.indialone.forkifyapp.api.RetrofitBuilder
-import com.indialone.forkifyapp.model.search.RecipesItem
-import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
 
-class RecipeRepository(
-    private val service: ApiService
-) {
+class RecipeRepository @Inject constructor(private val apiService: ApiService) {
     //
     @WorkerThread
-    fun searchRecipes(query: String): Flow<PagingData<RecipesItem>> {
-        return Pager(
-            config = PagingConfig(
-                pageSize = 50,
-                enablePlaceholders = false
-            ),
-            pagingSourceFactory = {
-                RecipePagingSource(service = service, query = query)
-            }
-//                    RetrofitBuilder
-//                    . apiService
-//                    . searchRecipes (query)
-        ).flow
-    }
+    suspend fun searchRecipes(query: String) = apiService.searchRecipes(query)
 
 
     @WorkerThread
-    suspend fun getRecipeDetails(rId: String) = RetrofitBuilder
-        .apiService
-        .getRecipeDetails(rId)
+    suspend fun getRecipeDetails(rId: String) = apiService.getRecipeDetails(rId)
 
 }

@@ -1,4 +1,4 @@
-package com.indialone.forkifyapp
+package com.indialone.forkifyapp.fragments
 
 import android.app.Dialog
 import android.content.res.ColorStateList
@@ -8,29 +8,33 @@ import android.util.Log
 import android.view.*
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.paging.LoadState
-import androidx.paging.PagingData
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.indialone.forkifyapp.R
 import com.indialone.forkifyapp.adapters.CustomListItemAdapter
 import com.indialone.forkifyapp.adapters.RecipeItemAdapter
 import com.indialone.forkifyapp.databinding.DialogCustomListBinding
 import com.indialone.forkifyapp.databinding.FragmentForkListBinding
-import com.indialone.forkifyapp.model.details.Recipe
-import com.indialone.forkifyapp.model.search.RecipesItem
 import com.indialone.forkifyapp.utils.Constants
-import com.indialone.forkifyapp.viewmodel.*
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
+import com.indialone.forkifyapp.viewmodel.RecipeViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ForkListFragment : Fragment() {
 
     private lateinit var mBinding: FragmentForkListBinding
-    private lateinit var recipeViewModel: RecipeViewModel
-    private var queries = getSearchOptions()
+
+    @Inject
+    lateinit var recipeViewModel: RecipeViewModel
+
+    @Inject
+    lateinit var recipeItemAdapter: RecipeItemAdapter
+
+    @Inject
+    lateinit var mCustomListItemAdapter: CustomListItemAdapter
+
     private var selectedQuery: String = ""
+
     private lateinit var mCustomListDialog: Dialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,11 +55,6 @@ class ForkListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        recipeViewModel =
-            ViewModelProvider(this, Injection.provideViewModelFactory(requireContext(), this)).get(
-                RecipeViewModel::class.java
-            )
-
         if (selectedQuery == "") {
             mBinding.tv.visibility = View.VISIBLE
             mBinding.tv.text = "to load your Favourite Category Dishes"
@@ -75,83 +74,16 @@ class ForkListFragment : Fragment() {
             mBinding.tv.visibility = View.GONE
             mBinding.tvIcon.visibility = View.GONE
             mBinding.rvRecipes.visibility = View.VISIBLE
-            // i comment below line because it reloads it again when i come back from ForkRecipeDetailsFragment.kt
-            // recipeViewModel.fetchSearchRecipes(selectedQuery)
+
             recipeViewModel.getSearchRecipes().observe(viewLifecycleOwner) { response ->
-                Log.e("response count", "${response.count}")
-                Log.e("response", "${response.recipes}")
+
+                recipeItemAdapter.addData(response.recipes!!)
+
                 mBinding.rvRecipes.layoutManager = LinearLayoutManager(mBinding.root.context)
-                mBinding.rvRecipes.adapter =
-                    RecipeItemAdapter()
+                mBinding.rvRecipes.adapter = recipeItemAdapter
             }
         }
 
-    }
-
-    private fun FragmentForkListBinding.bindSearch(
-        uiState: StateFlow<UiState>,
-        onQueryChanged: (UiAction.Search) -> Unit
-    ) {
-
-
-        lifecycleScope.launch {
-            uiState
-                .map { it.query }
-                .distinctUntilChanged()
-                .collect()
-        }
-    }
-
-    private fun FragmentForkListBinding.bindState(
-        uiState: StateFlow<UiState>,
-        uiActions: (UiAction) -> Unit
-    ) {
-
-    }
-
-    private fun FragmentForkListBinding.bindList(
-        repoAdapter: RecipeItemAdapter,
-        uiState: StateFlow<UiState>,
-        onScrollChanged: (UiAction.Scroll) -> Unit
-    ) {
-        rvRecipes.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (dy != 0) onScrollChanged(UiAction.Scroll(currentQuery = uiState.value.query))
-            }
-        })
-        val notLoading = repoAdapter.loadStateFlow
-            // Only emit when REFRESH LoadState for RemoteMediator changes.
-            .distinctUntilChangedBy { it.refresh }
-            // Only react to cases where Remote REFRESH completes i.e., NotLoading.
-            .map { it.refresh is LoadState.NotLoading }
-
-        val hasNotScrolledForCurrentSearch = uiState
-            .map { it.hasNotScrolledForCurrentSearch }
-            .distinctUntilChanged()
-
-        val shouldScrollToTop = combine(
-            notLoading,
-            hasNotScrolledForCurrentSearch,
-            Boolean::and
-        )
-            .distinctUntilChanged()
-
-        val pagingData = uiState
-            .map { it.pagingData }
-            .distinctUntilChanged()
-
-        lifecycleScope.launch {
-            combine(shouldScrollToTop, pagingData, ::Pair)
-                // Each unique PagingData should be submitted once, take the latest from
-                // shouldScrollToTop
-                .distinctUntilChangedBy { it.second }
-                .collectLatest { (shouldScroll, pagingData) ->
-                    repoAdapter.submitData(pagingData as PagingData<UiModel>)
-                    // Scroll only after the data has been submitted to the adapter,
-                    // and is a fresh search
-                    if (shouldScroll) rvRecipes.scrollToPosition(0)
-                }
-        }
     }
 
 
@@ -180,12 +112,9 @@ class ForkListFragment : Fragment() {
         val dishes = getSearchOptions()
         binding.tvTitle.text = Constants.TITLE_DIALOG
         binding.rvList.layoutManager = LinearLayoutManager(requireActivity())
-        binding.rvList.adapter = CustomListItemAdapter(
-            requireActivity(),
-            this,
-            dishes,
-            Constants.FILTER_SELECTION
-        )
+        mCustomListItemAdapter.addItems(dishes)
+        mCustomListItemAdapter.addFragment(this@ForkListFragment)
+        binding.rvList.adapter = mCustomListItemAdapter
         mCustomListDialog.show()
     }
 
@@ -197,11 +126,11 @@ class ForkListFragment : Fragment() {
         mBinding.rvRecipes.visibility = View.VISIBLE
         recipeViewModel.fetchSearchRecipes(filterItemSelection)
         recipeViewModel.getSearchRecipes().observe(viewLifecycleOwner) { response ->
-            Log.e("response count", "${response.count}")
-            Log.e("response", "${response.recipes}")
+
+            recipeItemAdapter.addData(response.recipes!!)
+
             mBinding.rvRecipes.layoutManager = LinearLayoutManager(mBinding.root.context)
-            mBinding.rvRecipes.adapter =
-                RecipeItemAdapter()
+            mBinding.rvRecipes.adapter = recipeItemAdapter
         }
         selectedQuery = filterItemSelection
     }

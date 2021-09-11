@@ -5,34 +5,17 @@ import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigatorExtras
-import androidx.paging.PagingDataAdapter
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.indialone.forkifyapp.R
 import com.indialone.forkifyapp.databinding.RecipeItemLayoutBinding
 import com.indialone.forkifyapp.model.search.RecipesItem
-import com.indialone.forkifyapp.viewmodel.RecipeViewModel
-import com.indialone.forkifyapp.viewmodel.UiModel
+import javax.inject.Inject
 
-//    private val list: ArrayList<RecipesItem>
+class RecipeItemAdapter @Inject constructor() :
+    RecyclerView.Adapter<RecipeItemAdapter.RecipeItemViewHolder>() {
 
-class RecipeItemAdapter :
-    PagingDataAdapter<UiModel, RecipeItemAdapter.RecipeItemViewHolder>(UIMODEL_COMPARATOR) {
-    companion object {
-        private val UIMODEL_COMPARATOR = object : DiffUtil.ItemCallback<UiModel>() {
-            override fun areItemsTheSame(oldItem: UiModel, newItem: UiModel): Boolean {
-                return (oldItem is UiModel.RecipeItem && newItem is UiModel.RecipeItem &&
-                        oldItem.recipesItem.title == newItem.recipesItem.title) ||
-                        (oldItem is UiModel.SeparatorItem && newItem is UiModel.SeparatorItem &&
-                                oldItem.description == newItem.description)
-            }
-
-            override fun areContentsTheSame(oldItem: UiModel, newItem: UiModel): Boolean =
-                oldItem == newItem
-        }
-    }
-
+    private val recipes = ArrayList<RecipesItem>()
 
     class RecipeItemViewHolder(itemView: RecipeItemLayoutBinding) :
         RecyclerView.ViewHolder(itemView.root) {
@@ -61,39 +44,37 @@ class RecipeItemAdapter :
     }
 
     override fun onBindViewHolder(holder: RecipeItemViewHolder, position: Int) {
-        val uiModel = getItem(position)
-        uiModel?.let {
-            when (uiModel) {
-                is UiModel.RecipeItem ->{
-                    (holder as RecipeItemViewHolder).bind(uiModel.recipesItem)
-                    holder.itemView.setOnClickListener {
-                        val bundle = bundleOf(
-                            "recipeId" to uiModel.recipesItem.recipe_id
-                        )
+        holder.bind(recipes[position])
+        holder.itemView.setOnClickListener {
+            val bundle = bundleOf(
+                "recipeId" to recipes[position].recipe_id
+            )
 
-                        val extras = FragmentNavigatorExtras(
-                            holder.ivDish to "recipe_image",
-                            holder.tvTitle to "recipe_title",
-                            holder.tvPublisher to "recipe_publisher",
-                            holder.tvSocialRank to "recipe_rank"
-                        )
+            val extras = FragmentNavigatorExtras(
+                holder.ivDish to "recipe_image",
+                holder.tvTitle to "recipe_title",
+                holder.tvPublisher to "recipe_publisher",
+                holder.tvSocialRank to "recipe_rank"
+            )
 
-                        it.findNavController()
-                            .navigate(
-                                R.id.action_forkListFragment_to_forkRecipeDetailsFragment,
-                                bundle,
-                                null,
-                                extras
-                            )
-                    }
-                }
-            }
+            it.findNavController()
+                .navigate(
+                    R.id.action_forkListFragment_to_forkRecipeDetailsFragment,
+                    bundle,
+                    null,
+                    extras
+                )
         }
-//        holder.bind(list[position])
-
     }
 
-//    override fun getItemCount(): Int {
-//        return list.size
-//    }
+    override fun getItemCount(): Int {
+        return recipes.size
+    }
+
+    fun addData(list: List<RecipesItem>) {
+        recipes.clear()
+        recipes.addAll(list)
+        notifyDataSetChanged()
+    }
+
 }

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:background="@color/colorPrimaryLight"
     app:layoutDescription="@xml/fragment_fork_recipe_details_scene"
-    tools:context=".ForkRecipeDetailsFragment">
+    tools:context=".fragments.ForkRecipeDetailsFragment">
 
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/iv_dish"
